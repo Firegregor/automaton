@@ -1,13 +1,19 @@
 import logging
 import os
-import pyautogui
 import time
-import keyboard
-import win32api, win32con
 from src import JsonDict
+from src import Step, TypePhrase, Sequence
+
+
+def log_format(name):
+    return f"%(asctime)s-{name}-%(levelname)s:\t%(message)s"
+
 
 class Automaton:
-    LOG_FORMAT = "%(asctime)s-%(name)s-%(levelname)s:\t%(message)s"
+    DEFINED_STEPS = {
+        "sequence": Sequence,
+        "phrase": TypePhrase
+        }
 
     def __init__(self, name, config=None, path=None):
         self.name = name
@@ -19,46 +25,44 @@ class Automaton:
         if config is None:
             config = f"{path}/{name}.json"
         self.config = JsonDict(json_path=config)
-        if "Verbosity" not in self.config:
-            self.config["Verbosity"] = logging.DEBUG
-        self.set_logger()
+        self.check_config()
+        self.steps={}
+        self.log = self.set_logger(name)
+        self.init_steps()
         self.log.info("Init done")
         self.log.warning("check the logs")
 
-    def click(self,x, y, *args):
-        win32api.SetCursorPos( (x, y) )
-        if self.config["test"]:
-            input('Is mouse in proper place?')
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0)
-        time.sleep(self.DELAY)
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0)
-        self.log.debug(f"Click at position {x}:{y}")
+    def check_config(self):
+        if "Verbosity" not in self.config:
+            self.config["Verbosity"] = logging.DEBUG
+        if "step_default" not in self.config:
+            self.config["step_default"] = {}
+        if "steps" not in self.config:
+            self.config["steps"] = [{"type": "sequence", "name": "default_sequence"}]
+        if "main_sequence" not in self.config:
+            self.config["main_sequence"] = "default_sequence"
 
-    def keyboard_output(self, text):
-        self.log.debug(f"Simulate typing {text}")
-        for x in text:
-            keyboard.press(x)
-            time.sleep(self.DELAY)
-
-    def set_logger(self):
-        self.log = logging.getLogger(self.name)
-        formater = logging.Formatter(self.LOG_FORMAT)
+    def set_logger(self, name):
+        log = logging.getLogger(name)
+        formater = logging.Formatter(log_format(name))
         file_handler = logging.FileHandler(f"{self.path}/{self.name}.log")
         file_handler.setLevel(logging.DEBUG)
         file_handler.setFormatter(formater)
-        self.log.addHandler(file_handler)
+        log.addHandler(file_handler)
         console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.DEBUG)# (self.config["Verbosity"])
+        console_handler.setLevel(self.config["Verbosity"])
         console_handler.setFormatter(formater)
+        log.addHandler(console_handler)
+        log.debug(f"Logger {name} setup")
+        return log
 
-        self.log.addHandler(console_handler)
-        self.log.debug("Logger setup")
+    def init_steps(self):
+        self.log.debug(f"Init steps Begin")
+        for step in self.config["steps"]:
+            name = step["name"]
+            step_type = step["type"]
+            if "config" not in step:
+                step["config"] = self.config["step_default"]
+            self.steps[name] = self.DEFINED_STEPS[step_type](log=self.set_logger(name), **step)
+        self.log.debug(f"Init steps End")
 
-    def run_sequence(self,sequence, exceptions):
-        for step in sequence:
-            self.log.info(step)
-            if self.finished:
-                break
-            for exc in exceptions:
-                exc.check()
-            step.run()

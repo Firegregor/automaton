@@ -1,4 +1,13 @@
 {
   "test": true,
-  "Verbosity": 10
+  "Verbosity": 10,
+  "steps_default": {},
+  "steps": [
+    {
+      "type": "sequence",
+      "name": "default_sequence"
+    }
+  ],
+  "main_sequence": "default_sequence",
+  "step_default": {}
 }
