@@ -1,0 +1,11 @@
+{
+    "DELAY": 0.1,
+    "REGION": [427, 289, 1050, 500],
+    "TILE_LENGTH": 40,
+    "CONFIDENCE_LEVEL": 0.8,
+    "Colors":{
+        "GREY": [50,50,50]
+    },
+    "EXIT_KEY": "q"
+
+}

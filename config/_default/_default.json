@@ -2,6 +2,9 @@
   "test": true,
   "Verbosity": 10,
   "steps_default": {},
+  "data":{
+      "start":"start_win10.png"
+  },
   "steps": [
     {
       "type": "sequence",
